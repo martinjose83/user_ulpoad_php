@@ -3,6 +3,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
+$dryrun = false;
 mysqli_report(MYSQLI_REPORT_STRICT);
 // Create connection
 try {
@@ -61,12 +62,17 @@ try
 
   while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
     $num = count($data);
+if(validEmail($data[2])){
+    if(!$dryrun)updateToDB(titleCase($data[0]),titleCase($data[1]),strtolower($data[2]));
     echo " \n $num fields in line $row: \t\t";
     $row++;
     for ($c=0; $c < $num; $c++) {
-        echo $data[$c] . "\t\t";
-    }
-
+      
+     echo titleCase($data[$c]). "\t\t";
+  }
+}else{
+  echo "\t".$data[2]."Not a valid email Id";
+}
 }
   fclose($handle);
 
@@ -74,26 +80,39 @@ try
 
 } catch ( Exception $e ) {
   echo 'ERROR:'.$e->getMessage();
-  // die("Failed to create Table users" );
+ 
 
 } 
-// $row = 1;
-// if (($handle = fopen("users1.csv", "r")) !== FALSE) {
-//     while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-//         $num = count($data);
-//         echo " \n $num fields in line $row: \t\t";
-//         $row++;
-//         for ($c=0; $c < $num; $c++) {
-//             echo $data[$c] . "\t\t";
-//         }
 
-//     }
-//     fclose($handle);
-// }
 //Name and Surname convert to titlecase.
+function titleCase($str) {
+  $str = trim($str);
+  $sarr = explode(" ", $str);
+  for ($x=0;$x<sizeof($sarr);$x++){
+    $sarr[$x] = implode("'",explode(" ",ucwords(strtolower(implode(" ", explode("'",$sarr[$x]))))));
+}
+return implode(" ",$sarr);
+}
 //email convert to lowercase.
 //check for valid emailid
+function validEmail($email) {
+  $email = filter_var($email, FILTER_SANITIZE_EMAIL);
+  return filter_var($email, FILTER_VALIDATE_EMAIL);
+}
+
 //insert into MySQL database.
+function updateToDB($fname, $lname, $email){
+$sql = $GLOBALS["conn"]->prepare("INSERT INTO users (fname, surname, email)
+VALUES (?,?,?);");
+$sql->bind_param("sss", $fname, $lname, $email);
+$x = $sql->execute();
+
+if ($x) {
+  echo "\t New record created successfully";
+} else {
+  echo "\t Error: " . mysqli_error($GLOBALS["conn"]);
+}
+}
 //error message if emailid is repeated.
 
 $conn->close();
