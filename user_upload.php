@@ -7,6 +7,7 @@ $dryrun = false;
 $conn = null;
 $fileName = "users.csv";
 $dbsetuprun = false;
+$droptable = false;
 
 $shortopts  = "";
 $shortopts .= "u:";  // Required MySQL username
@@ -14,10 +15,11 @@ $shortopts .= "p:";  // Required MySQL password
 $shortopts .= "h:";  // Required MySQL host address/name
 
 $longopts  = array(
-    "file:",          // Required value
-    "create_table",   // Optional value
-    "dry_run",        // No value
-    "help",           // No value
+    "file:",          // Required Filepath and name
+    "create_table",   // option to create able and setip database
+    "dry_run",        // no database involved rest of the functionalities works with added file input
+    "help",           // leads to display the help options
+    "drop_table",     // drops the current user table if any exists.
 );
 $options = getopt($shortopts, $longopts);
 var_dump($options);
@@ -29,6 +31,8 @@ if(array_key_exists("file", $options)){$fileName = $options["file"];}     //assi
 if(array_key_exists("create_table", $options)){$dbsetuprun = true;}   //initiate the sql setup and create table
 if(array_key_exists("dry_run", $options)){$dryrun = true;}            //initiate dryrun
 if(array_key_exists("help", $options)){  help();}
+if(array_key_exists("drop_table", $options)){$droptable = true;}
+
 
 // if(isset($file) && $file != false){
 //   dryRun($file);
@@ -37,17 +41,22 @@ if(array_key_exists("help", $options)){  help();}
 if (!$dryrun){
 connectDBServer($servername, $username, $password);
 createDBSchema();
+if($droptable){dropDBTable();}
 createDBTable();
 }
 // Create connection
 function connectDBServer($servername, $username, $password) {
 mysqli_report(MYSQLI_REPORT_STRICT);
 try {
-  $GLOBALS["conn"] = mysqli_connect($servername, $username, $password);
+  $conn = new mysqli($servername, $username, $password); 
+  if($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+ }
  
-if (!$GLOBALS["conn"]) {
+if (!$conn) {
     die('Could not connect: ');
 }
+$GLOBALS["conn"] = $conn;
 echo "MySQL Server connected successfully \n";
 } catch (Exception $e) {
     echo 'ERROR:'.$e->getMessage();
@@ -83,6 +92,19 @@ $sql = "CREATE TABLE IF NOT EXISTS users (
   } catch (Exception $e) {
     echo 'ERROR:'.$e->getMessage();
     die("Failed to create Table users" );
+  }
+}
+//Drop table function
+function dropDBTable(){
+  // sql to create table
+$sql = "DROP TABLE IF EXISTS users;";
+  try{
+  $GLOBALS["conn"]->query($sql);
+    echo "Table users droped successfully\n";
+    die;
+  } catch (Exception $e) {
+    echo 'ERROR:'.$e->getMessage();
+    die("Failed to drop Table users" );
   }
 }
 #die here for create table run
@@ -196,8 +218,9 @@ function help(){
   Commands\t \t\t\tDescription:\n
   --file [csv filename] \tGives the name of the file to be parsed \n
   --create_table\t\t\tThis will cause the MySQL users table to be built and die\n 
-  --dry_run\t\t\t\tUsed with the --file directive in the instance that we want to run the\n
-  \t\t\t\t\tscript but not insert into the DB. All other functions will be executed, \n
+  --drop_table\t\t\t\tThis will drop the existing user table from the database.\n
+  --dry_run\t\t\t\tUsed with the --file directive in the instance that we want to run the
+  \t\t\t\t\tscript but not insert into the DB. All other functions will be executed, 
   \t\t\t\t\tbut the database won't be altered.\n
     -u \tMySQL username\n
     -p \tMySQL password\n
