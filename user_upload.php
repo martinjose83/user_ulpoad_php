@@ -6,16 +6,48 @@ $password = "";
 $dryrun = false;
 $conn = null;
 $fileName = "users.csv";
+$dbsetuprun = false;
+
+$shortopts  = "";
+$shortopts .= "u:";  // Required MySQL username
+$shortopts .= "p:";  // Required MySQL password
+$shortopts .= "h:";  // Required MySQL host address/name
+
+$longopts  = array(
+    "file:",          // Required value
+    "create_table",   // Optional value
+    "dry_run",        // No value
+    "help",           // No value
+);
+$options = getopt($shortopts, $longopts);
+var_dump($options);
+//figure out what the directive was... 
+if(array_key_exists("u", $options)){$username = $options["u"];}       //assign MySQL username.
+if(array_key_exists("p", $options)){$password = $options["p"];}       //assign MySQL password
+if(array_key_exists("h", $options)){$servername = $options["h"];}           //assign MySQL server hostname
+if(array_key_exists("file", $options)){$fileName = $options["file"];}     //assign File name and path to read.
+if(array_key_exists("create_table", $options)){$dbsetuprun = true;}   //initiate the sql setup and create table
+if(array_key_exists("dry_run", $options)){$dryrun = true;}            //initiate dryrun
+if(array_key_exists("help", $options)){  help();}
+
+// if(isset($file) && $file != false){
+//   dryRun($file);
+
+
 if (!$dryrun){
 connectDBServer($servername, $username, $password);
 createDBSchema();
 createDBTable();
 }
 // Create connection
-function connectDBServer($servername, $username, $password){
+function connectDBServer($servername, $username, $password) {
 mysqli_report(MYSQLI_REPORT_STRICT);
 try {
-  $GLOBALS["conn"] = new mysqli($servername, $username, $password);
+  $GLOBALS["conn"] = mysqli_connect($servername, $username, $password);
+ 
+if (!$GLOBALS["conn"]) {
+    die('Could not connect: ');
+}
 echo "MySQL Server connected successfully \n";
 } catch (Exception $e) {
     echo 'ERROR:'.$e->getMessage();
@@ -53,8 +85,11 @@ $sql = "CREATE TABLE IF NOT EXISTS users (
     die("Failed to create Table users" );
   }
 }
+#die here for create table run
+if($dbsetuprun){ die("Database setup run completed successfully");}
 //read file users.csv.
-$row = 1;
+
+
 try
 {
   
@@ -96,7 +131,7 @@ echo "\n";}else {echo $fileName. " is an empty file";}
     if($num>2){
 if(validEmail($data[2]) ){
 if (validNames($data[0],$data[1])){
-  echo titleCase($data[0]). "\t\t".titleCase($data[1]."\t\t".strtolower($data[2]));
+  echo titleCase($data[0]). "\t\t".titleCase($data[1])."\t\t".strtolower($data[2]);
     if(!$dryrun)updateToDB(titleCase($data[0]),titleCase($data[1]),strtolower($data[2]));
 }else{
   echo "Invalid or empty firstname and last name";
@@ -155,6 +190,21 @@ if ($x) {
   //error message if emailid is repeated. or any error
   echo "\t Error: " . mysqli_error($GLOBALS["conn"]);
 }
+}
+function help(){
+  echo "help options: \n
+  Commands\t \t\t\tDescription:\n
+  --file [csv filename] \tGives the name of the file to be parsed \n
+  --create_table\t\t\tThis will cause the MySQL users table to be built and die\n 
+  --dry_run\t\t\t\tUsed with the --file directive in the instance that we want to run the\n
+  \t\t\t\t\tscript but not insert into the DB. All other functions will be executed, \n
+  \t\t\t\t\tbut the database won't be altered.\n
+    -u \tMySQL username\n
+    -p \tMySQL password\n
+    -h \tMySQL host\n
+  --help\t For help  OR to see these options\n
+    ";
+  die();
 }
 if($conn)$conn->close();
 ?>
