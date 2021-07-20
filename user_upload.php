@@ -1,7 +1,7 @@
 <?php 
 
 $servername = "localhost";
-$username = "root";
+$username = "root1";
 $password = "";
 $dryrun = false;
 $conn = null;
@@ -22,20 +22,25 @@ $longopts  = array(
     "drop_table",     // drops the current user table if any exists.
 );
 $options = getopt($shortopts, $longopts);
-var_dump($options);
-//figure out what the directive was... 
+//process the directives /options..
 if(array_key_exists("u", $options)){$username = $options["u"];}       //assign MySQL username.
 if(array_key_exists("p", $options)){$password = $options["p"];}       //assign MySQL password
-if(array_key_exists("h", $options)){$servername = $options["h"];}           //assign MySQL server hostname
+if(array_key_exists("h", $options)){$servername = $options["h"];}        //assign MySQL server hostname
 if(array_key_exists("file", $options)){$fileName = $options["file"];}     //assign File name and path to read.
 if(array_key_exists("create_table", $options)){$dbsetuprun = true;}   //initiate the sql setup and create table
 if(array_key_exists("dry_run", $options)){$dryrun = true;}            //initiate dryrun
-if(array_key_exists("help", $options)){  help();}
-if(array_key_exists("drop_table", $options)){$droptable = true;}
+if(array_key_exists("help", $options)){  help();}                     //option dry run
+if(array_key_exists("drop_table", $options)){$droptable = true;}      //deletes the current user table.
 
 
 // if(isset($file) && $file != false){
 //   dryRun($file);
+
+
+
+
+
+
 
 
 if (!$dryrun){
@@ -48,18 +53,18 @@ createDBTable();
 function connectDBServer($servername, $username, $password) {
 mysqli_report(MYSQLI_REPORT_STRICT);
 try {
-  $conn = new mysqli($servername, $username, $password); 
-  if($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
- }
- 
-if (!$conn) {
-    die('Could not connect: ');
-}
+$conn = @mysqli_connect($servername, $username, $password); 
+
 $GLOBALS["conn"] = $conn;
 echo "MySQL Server connected successfully \n";
 } catch (Exception $e) {
-    echo 'ERROR:'.$e->getMessage();
+   
+    $error = $e->getMessage();
+    if (str_contains($error,'getaddrinfo failed')){ 
+      echo "Error: Incorrect Server name/ host address/server not found\t"; }
+    if (str_contains($error,'Access denied for user')){ 
+        echo "Error: Incorrect username or password for Database Server\t"; }
+      else { echo 'ERROR:'.$error;}
     die("Failed to Connect MySQL " );
 }
 }
@@ -108,7 +113,9 @@ $sql = "DROP TABLE IF EXISTS users;";
   }
 }
 #die here for create table run
-if($dbsetuprun){ die("Database setup run completed successfully");}
+if($dbsetuprun){ 
+  if($conn)$conn->close();
+  die("Database setup run completed successfully");}
 //read file users.csv.
 
 
