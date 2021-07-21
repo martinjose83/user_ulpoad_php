@@ -1,7 +1,7 @@
 <?php 
 
 $servername = "localhost";
-$username = "root1";
+$username = "root";
 $password = "";
 $dryrun = false;
 $conn = null;
@@ -62,7 +62,7 @@ echo "MySQL Server connected successfully \n";
     $error = $e->getMessage();
     if (str_contains($error,'getaddrinfo failed')){ 
       echo "Error: Incorrect Server name/ host address/server not found\t"; }
-    if (str_contains($error,'Access denied for user')){ 
+    elseif (str_contains($error,'Access denied for user')){ 
         echo "Error: Incorrect username or password for Database Server\t"; }
       else { echo 'ERROR:'.$error;}
     die("Failed to Connect MySQL " );
@@ -73,7 +73,7 @@ function createDBSchema(){
 $sql = "CREATE SCHEMA IF NOT EXISTS `userDB`;";
 try {
 if ($GLOBALS["conn"]->query($sql) === TRUE) {
-    echo "Database created successfully.\n";
+    echo "Database connected successfully.\n";
 //Select database
 mysqli_select_db($GLOBALS["conn"], 'userDB');
   }
@@ -93,7 +93,7 @@ $sql = "CREATE TABLE IF NOT EXISTS users (
   );";
   try{
   $GLOBALS["conn"]->query($sql);
-    echo "Table users created successfully\n";
+    echo "Table users created/connected successfully\n";
   } catch (Exception $e) {
     echo 'ERROR:'.$e->getMessage();
     die("Failed to create Table users" );
